@@ -25,7 +25,9 @@ except Exception as e:
     raise
     
 
-dataset_path = r"C:\Users\Administrator\Desktop\Thesis\root\dataset\dataset.csv"
+from clean_logs import ROOT
+
+dataset_path = ROOT / "dataset/dataset.csv"
 
 try:
     df = pd.read_csv(dataset_path)
@@ -82,7 +84,7 @@ def extract_numeric_value(value_str):
 for x in range(len(df)):
     
     # Check if this row needs processing
-    if pd.isna(df.loc[x, 'Total Deformation Reported Frequency']):
+    if pd.isna(df.loc[x, 'modal_frequency_1']):
         
         input_params = {
             "beam_length": df.loc[x, "beam_length"],

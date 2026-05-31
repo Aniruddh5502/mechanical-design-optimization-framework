@@ -1,60 +1,85 @@
-# Flexure Beam Ensemble Surrogate Model
+# Accelerometer Flexure Surrogate Model
 
-This repository implements a high-fidelity probabilistic surrogate model designed to predict the structural and modal characteristics of a flexure beam. By leveraging an ensemble of neural networks trained on Finite Element Analysis (FEA) data, the model provides a computationally efficient alternative to traditional simulations, enabling real-time design exploration and uncertainty quantification.
+This repository contains a probabilistic surrogate model for a single-degree-of-freedom (SDOF) accelerometer flexure geometry. The model is designed to predict modal and structural responses based on geometric parameters, facilitating the analysis of cross-axis modal separation and structural integrity without requiring repeated high-cost Finite Element Analysis (FEA).
 
-## Overview
+## Project Objective
 
-The model maps geometric input parameters to six distinct physical responses. Unlike standard "black-box" regressors, this implementation uses an ensemble approach to provide both a mean prediction and a measure of uncertainty (standard deviation), ensuring the reliability of the surrogate in a design exploration context.
+The goal is to replace computationally expensive FEA simulations with a fast, accurate surrogate model. By training an ensemble of neural networks, the system predicts the first four modal frequencies, maximum deformation, and maximum stress, while providing a measure of uncertainty to ensure the predictions are reliable for engineering decisions.
 
-### Model Specifications
-- **Inputs**: Beam Height, Beam Length, Fillet Size, Beam Width.
-- **Outputs**: First four modal frequencies (Hz), maximum deformation (mm), and maximum von Mises stress (MPa).
-- **Architecture**: Ensemble of 20 Multi-Layer Perceptron (MLP) regressors.(Has 1 hidden layer)
-- **Data Pipeline**: Standard scaling of inputs and targets to ensure numerical stability and convergence.
+## Geometry and Design
+The surrogate model focuses on a flexure beam geometry intended for a MEMS accelerometer. The primary design objectives include:
+- **Single Degree of Freedom (SDOF)**: Ensuring the structure responds primarily along the intended axis.
+- **Cross-Axis Modal Separation**: Maximizing the frequency gap between the primary mode and transverse/torsional modes to avoid signal interference.
+
+## Input and Output Parameters
+
+### Input Geometric Parameters
+- **Beam Height**: Vertical dimension of the flexure.
+- **Beam Length**: Longitudinal dimension of the flexure.
+- **Fillet Size**: Radius of the fillets to reduce stress concentrations.
+- **Beam Width**: Lateral dimension of the flexure.
+
+### Output Physical Responses
+- **Modal Frequencies (1-4)**: The first four natural frequencies of the structure (Hz).
+- **Maximum Deformation**: The peak displacement under design load (mm).
+- **Maximum Stress**: The peak von Mises stress to ensure the material remains within the elastic limit (MPa).
 
 ## Repository Structure
 
-- `model_build.py`: The complete pipeline for data preprocessing, scaling, ensemble training, and performance evaluation.
-- `predict.py`: Implements the `SurrogatePredictor` class, a production-ready API for performing inferences with uncertainty quantification.
-- `models/`: Contains the serialized ensemble (`ensemble_20_models.pkl`) and the associated scalers.
-- `dataset/`: The FEA-generated dataset used for training and validation.
-- `plots/`: Diagnostic visualizations, including correlation heatmaps of the target outputs.
+### Core Scripts
+- `model_build.py`: Full pipeline for data loading, scaling, ensemble training, and performance metrics.
+- `predict.py`: Contains the `SurrogatePredictor` class for making fast inferences with uncertainty.
+- `dataset_gen.py`: Generates the input parameter grid based on design bounds.
+- `sweep.py`: Automates the execution of Ansys Workbench to populate the dataset.
+- `ansys_runner.py`: Handles the communication and parameter updates within Ansys Workbench.
+- `clean_logs.py`: Maintenance script to clear temporary log files.
+- `process_runner.py`: Utility to execute scripts and save their terminal output to markdown files.
 
-## Usage
+### Analysis and Visualization
+- `manifold-extraction.py`: Uses UMAP/PCA to visualize the output manifold and weight space.
+- `model-analysis.py`: Conducts Jacobian sensitivity analysis to see how inputs affect outputs.
 
-### Training the Ensemble
-To train the ensemble and evaluate its performance, execute:
-```bash
-python model_build.py
-```
-The script performs bootstrap sampling to create 20 diverse models, calculates the ensemble mean, and reports the $R^2$ and MAPE for each target.
+### Folders
+- `models/`: Stores the trained ensemble (`ensemble_20_models.pkl`) and scaling parameters.
+- `dataset/`: Contains the `dataset.csv` used for training and validation.
+- `ansys_files/`: Project files and parameter definitions for Ansys Workbench.
+- `plots/`: Stores all generated figures and analysis results.
 
-### Making Predictions with Uncertainty
-The `SurrogatePredictor` class allows for both point predictions and probabilistic inferences.
+## Installation and Setup
 
-```python
-from predict import SurrogatePredictor
+### Prerequisites
+- Python 3.x
+- Required Libraries: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `joblib`
+- Optional: `umap-learn` (for manifold extraction), `termcolor` (for formatted logs).
 
-# Initialize the predictor
-predictor = SurrogatePredictor()
+### Running the Pipeline
 
-# Predict with uncertainty (mean and standard deviation)
-result = predictor.predict_single_with_uncertainty(
-    beam_height=10.0, 
-    beam_length=12.5, 
-    fillet_size=0.3, 
-    beam_width=0.6
-)
+1. **Data Generation**:
+   Run `dataset_gen.py` to create the input grid in `dataset/dataset.csv`.
+   ```bash
+   python dataset_gen.py
+   ```
 
-print(f"Mean: {result['mean']}")
-print(f"Uncertainty (std): {result['std']}")
-```
+2. **FEA Data Collection**:
+   Ensure Ansys Workbench is open and the server port is known. Run `sweep.py` and enter the port number when prompted.
+   ```bash
+   python sweep.py
+   ```
 
-## Performance
+3. **Model Training**:
+   Train the ensemble of 20 MLP regressors.
+   ```bash
+   python model_build.py
+   ```
 
-The model achieves "Detailed Design" grade precision, with all target parameters maintaining an error rate (MAPE) of less than 5%.
+4. **Inference**:
+   Use the `SurrogatePredictor` in `predict.py` to get results for new geometries.
 
-| Target Parameter | $R^2$ Score | MAPE (%) |
+## Performance Metrics
+
+The model is evaluated using $R^2$ and Mean Absolute Percentage Error (MAPE).
+
+| Target Parameter | R2 Score | MAPE (%) |
 | :--- | :--- | :--- |
 | Modal Frequency 1 | 0.9961 | 1.60% |
 | Modal Frequency 2 | 0.9995 | 0.47% |
@@ -62,5 +87,3 @@ The model achieves "Detailed Design" grade precision, with all target parameters
 | Modal Frequency 4 | 0.9948 | 1.29% |
 | Max Deformation | 0.9849 | 3.56% |
 | Max Stress | 0.9686 | 4.00% |
-
-The inclusion of the ensemble standard deviation ($\pm \sigma$) allows for the identification of high-uncertainty regions in the design space, transforming the surrogate from a simple approximation tool into a reliable structural analysis utility.
