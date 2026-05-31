@@ -52,7 +52,5 @@ print("[ ",colored("x","green")," ]    ",    dataset_gen_path)
 print("[ ",colored("x","green")," ]","    Checking the Dataset validity...")
 
 #process_2 = subprocess.run([sys.executable, log_clean_path])
-sys.path.append(dataset_gen_path)
 import dataset_gen
-sys.path.append(sweep_path)
 import sweep

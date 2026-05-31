@@ -3,9 +3,9 @@ import sys
 from pathlib import Path
 
 # -------- CONFIGURE LOG DIRECTORY --------
-ROOT            =   Path(__file__).parent.parent
+ROOT            =   Path(__file__).parent
 log_directory   =   ROOT / "logs"
-root_directory  =   ROOT / "src"
+root_directory  =   ROOT
 # -----------------------------------------
 
 def delete_log_files(directory):

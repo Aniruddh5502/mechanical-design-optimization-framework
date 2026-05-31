@@ -79,6 +79,7 @@ df.columns = df.columns.str.strip()
 
 # Rename columns 
 df = df.rename(columns = param_mapping)
+df.columns = df.columns.str.strip()
 
 # drop 'Name' columns
 if "Name" in df.columns:
