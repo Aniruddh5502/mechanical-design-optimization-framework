@@ -18,6 +18,7 @@ from pathlib import Path
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import joblib
+from tqdm import tqdm  # progress bar
 
 # Try to import UMAP (optional, but strongly recommended)
 try:
@@ -115,7 +116,7 @@ scaler_Y = predictor.scaler_Y
 print(f"\nGenerating {N_SAMPLES:,} random input points within training bounds...")
 np.random.seed(RANDOM_SEED)
 X_real = np.zeros((N_SAMPLES, 4))
-for i, name in enumerate(INPUT_NAMES):
+for i, name in enumerate(tqdm(INPUT_NAMES, desc="Generating inputs", unit="feature")):
     low, high = INPUT_BOUNDS[name]
     X_real[:, i] = np.random.uniform(low, high, N_SAMPLES)
 
@@ -129,15 +130,18 @@ print(f"Predicting outputs in batches of {BATCH_SIZE}...")
 all_predictions = []
 n_batches = int(np.ceil(N_SAMPLES / BATCH_SIZE))
 
-for batch_idx in range(n_batches):
-    start = batch_idx * BATCH_SIZE
-    end = min((batch_idx + 1) * BATCH_SIZE, N_SAMPLES)
-    batch_df = df_input.iloc[start:end]
-    # predict_batch returns mean predictions (DataFrame)
-    y_batch = predictor.predict_batch(batch_df).values   # shape (batch_size, 6)
-    all_predictions.append(y_batch)
-    if (batch_idx + 1) % 10 == 0 or (batch_idx + 1) == n_batches:
-        print(f"  Batch {batch_idx+1}/{n_batches} completed")
+# Use tqdm for batch progress
+with tqdm(total=n_batches, desc="Batch predictions", unit="batch") as pbar:
+    for batch_idx in range(n_batches):
+        start = batch_idx * BATCH_SIZE
+        end = min((batch_idx + 1) * BATCH_SIZE, N_SAMPLES)
+        batch_df = df_input.iloc[start:end]
+        # predict_batch returns mean predictions (DataFrame)
+        y_batch = predictor.predict_batch(batch_df).values   # shape (batch_size, 6)
+        all_predictions.append(y_batch)
+        pbar.update(1)
+        # Optional: show samples processed
+        pbar.set_postfix({"samples": end})
 
 Y_pred = np.vstack(all_predictions)   # (N_SAMPLES, 6)
 print(f"Prediction shape: {Y_pred.shape}")
@@ -148,17 +152,22 @@ print(f"Prediction shape: {Y_pred.shape}")
 print("\nComputing manifold embeddings...")
 
 if UMAP_AVAILABLE:
-    print("Using UMAP (non-linear manifold).")   # normal hyphen
+    print("Using UMAP (non-linear manifold) with verbose progress...")
     reducer_2d = umap.UMAP(n_neighbors=UMAP_NEIGHBORS, min_dist=UMAP_MIN_DIST,
-                           random_state=RANDOM_SEED, n_components=2)
+                           random_state=RANDOM_SEED, n_components=2,
+                           verbose=True)  # shows progress
     reducer_3d = umap.UMAP(n_neighbors=UMAP_NEIGHBORS, min_dist=UMAP_MIN_DIST,
-                           random_state=RANDOM_SEED, n_components=3)
+                           random_state=RANDOM_SEED, n_components=3,
+                           verbose=True)
 else:
     print("UMAP not available – using PCA (linear projection).")
-    # The dash above is a regular hyphen, but ensure it's ASCII; if not, replace with '-'
+    reducer_2d = PCA(n_components=2, random_state=RANDOM_SEED)
+    reducer_3d = PCA(n_components=3, random_state=RANDOM_SEED)
 
-# Fit and transform
+# Fit and transform (with progress bars)
+print("Fitting 2D embedding...")
 embedding_2d = reducer_2d.fit_transform(Y_pred)
+print("Fitting 3D embedding...")
 embedding_3d = reducer_3d.fit_transform(Y_pred)
 
 print(f"2D embedding shape: {embedding_2d.shape}")
@@ -170,7 +179,7 @@ print(f"3D embedding shape: {embedding_3d.shape}")
 print("\nGenerating publication‑quality plots...")
 
 # ----- 5.1 2D manifold coloured by each output -----
-for out_idx, (short_name, full_name) in enumerate(zip(OUTPUT_SHORT, OUTPUT_NAMES_FULL)):
+for out_idx, (short_name, full_name) in enumerate(tqdm(zip(OUTPUT_SHORT, OUTPUT_NAMES_FULL), desc="2D output plots", total=len(OUTPUT_NAMES_FULL))):
     fig, ax = plt.subplots(figsize=(FIG_WIDTH_SINGLE, FIG_HEIGHT_SINGLE))
     sc = ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1],
                     c=Y_pred[:, out_idx], cmap='viridis',
@@ -192,7 +201,7 @@ for out_idx, (short_name, full_name) in enumerate(zip(OUTPUT_SHORT, OUTPUT_NAMES
     plt.close(fig)
 
 # ----- 5.2 2D manifold coloured by each input -----
-for in_idx, (in_name, in_short) in enumerate(zip(INPUT_NAMES, INPUT_SHORT)):
+for in_idx, (in_name, in_short) in enumerate(tqdm(zip(INPUT_NAMES, INPUT_SHORT), desc="2D input plots", total=len(INPUT_NAMES))):
     fig, ax = plt.subplots(figsize=(FIG_WIDTH_SINGLE, FIG_HEIGHT_SINGLE))
     sc = ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1],
                     c=X_real[:, in_idx], cmap='viridis',
@@ -212,8 +221,8 @@ for in_idx, (in_name, in_short) in enumerate(zip(INPUT_NAMES, INPUT_SHORT)):
     save_fig(fig, f'manifold_2d_coloured_by_{in_name}')
     plt.close(fig)
 
-# ----- 5.3 3D manifold coloured by each output (interactive static plots) -----
-for out_idx, (short_name, full_name) in enumerate(zip(OUTPUT_SHORT, OUTPUT_NAMES_FULL)):
+# ----- 5.3 3D manifold coloured by each output -----
+for out_idx, (short_name, full_name) in enumerate(tqdm(zip(OUTPUT_SHORT, OUTPUT_NAMES_FULL), desc="3D output plots", total=len(OUTPUT_NAMES_FULL))):
     fig = plt.figure(figsize=(FIG_WIDTH_3D, FIG_HEIGHT_3D))
     ax = fig.add_subplot(111, projection='3d')
     sc = ax.scatter(embedding_3d[:, 0], embedding_3d[:, 1], embedding_3d[:, 2],
@@ -223,7 +232,6 @@ for out_idx, (short_name, full_name) in enumerate(zip(OUTPUT_SHORT, OUTPUT_NAMES
     ax.set_ylabel('Dim 2')
     ax.set_zlabel('Dim 3')
     ax.set_title(f'3D manifold – {short_name}', fontweight='bold')
-    # 3D plots typically keep spines, but we can set a clean face
     ax.grid(True, linestyle='-', alpha=0.2)
     cbar = fig.colorbar(sc, ax=ax, pad=0.1, shrink=0.6)
     cbar.set_label(short_name)
@@ -232,10 +240,9 @@ for out_idx, (short_name, full_name) in enumerate(zip(OUTPUT_SHORT, OUTPUT_NAMES
     plt.close(fig)
 
 # ----- 5.4 (Optional) Weight‑space manifold of the ensemble models -----
-# This gives insight into model diversity.
 print("\nAnalysing weight space of the ensemble...")
 weight_vectors = []
-for model in predictor.models:
+for model in tqdm(predictor.models, desc="Extracting weights", unit="model"):
     flat_weights = np.concatenate([coef.ravel() for coef in model.coefs_])
     flat_biases = np.concatenate([intercept.ravel() for intercept in model.intercepts_])
     weight_vec = np.concatenate([flat_weights, flat_biases])
@@ -249,7 +256,8 @@ scaler_weights = StandardScaler()
 weight_norm = scaler_weights.fit_transform(weight_matrix)
 
 if UMAP_AVAILABLE:
-    reducer_w = umap.UMAP(n_neighbors=5, min_dist=0.1, random_state=RANDOM_SEED)
+    print("Computing weight-space UMAP (verbose)...")
+    reducer_w = umap.UMAP(n_neighbors=5, min_dist=0.1, random_state=RANDOM_SEED, verbose=True)
     weight_embedding = reducer_w.fit_transform(weight_norm)
 
     fig, ax = plt.subplots(figsize=(FIG_WIDTH_SINGLE, FIG_HEIGHT_SINGLE))
