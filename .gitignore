@@ -36,14 +36,6 @@ ansys_files/
 *.res
 *.tmp
 
-# Data and Large Files
-dataset/
-*.csv
-*.npz
-*.npy
-*.h5
-*.pkl
-
 # Logs and Temporary outputs
 *.log
 predict_log.md
