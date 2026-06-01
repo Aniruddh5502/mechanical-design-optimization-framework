@@ -51,15 +51,12 @@ The surrogate model focuses on a flexure beam geometry intended for a MEMS accel
 - Python 3.x
 - Required Libraries: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, `joblib`
 - Optional: `umap-learn` (for manifold extraction), `termcolor` (for formatted logs).
-
 ### Running the Pipeline
-
 1. **Data Generation**:
    Run `dataset_gen.py` to create the input grid in `dataset/dataset.csv`.
    ```bash
    python dataset_gen.py
    ```
-
 2. **FEA Data Collection**:
    Ensure Ansys Workbench is open and the server port is known. Run `sweep.py` and enter the port number when prompted.
    ```bash
@@ -79,11 +76,11 @@ The surrogate model focuses on a flexure beam geometry intended for a MEMS accel
 
 The model is evaluated using $R^2$ and Mean Absolute Percentage Error (MAPE).
 
-| Target Parameter | R2 Score | MAPE (%) |
-| :--- | :--- | :--- |
-| Modal Frequency 1 | 0.9961 | 1.60% |
-| Modal Frequency 2 | 0.9995 | 0.47% |
-| Modal Frequency 3 | 0.9987 | 0.61% |
-| Modal Frequency 4 | 0.9948 | 1.29% |
-| Max Deformation | 0.9849 | 3.56% |
-| Max Stress | 0.9686 | 4.00% |
+| Target Parameter  | R2 Score | MAPE (%) |
+| :---------------- | :------- | :------- |
+| Modal Frequency 1 | 0.9961   | 1.60%    |
+| Modal Frequency 2 | 0.9995   | 0.47%    |
+| Modal Frequency 3 | 0.9987   | 0.61%    |
+| Modal Frequency 4 | 0.9948   | 1.29%    |
+| Max Deformation   | 0.9849   | 3.56%    |
+| Max Stress        | 0.9686   | 4.00%    |

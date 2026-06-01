@@ -42,10 +42,9 @@ INPUT_BOUNDS = {
 # transform: function applied to raw output (e.g., lambda x: -x for maximization inside NSGA‑II)
 OBJECTIVES = [
     ('f1_min',          'min', 0, None),   # maximise modal frequency 1
-    ('f2_max',          'max', 1, None),   # minimise max deformation (index 4)
-    ("deformation",     'max', 4, None)
+    ('f2_max',          'max', 1, None)   # minimise max deformation (index 4)
 ]
-
+# ("deformation",     'max', 4, None)
 # NSGA‑II parameters
 POP_SIZE = 100       # population size
 N_GEN    = 50        # number of generations
@@ -204,8 +203,8 @@ def plot_pareto_front(df: pd.DataFrame, objectives: List[tuple], output_path: Pa
     # ---------- Graph‑design standards ----------
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.size': 10,
-        'axes.labelsize': 11,
+        'font.size': 14,
+        'axes.labelsize': 12,
         'axes.titlesize': 12,
         'xtick.labelsize': 9,
         'ytick.labelsize': 9,
