@@ -1,6 +1,6 @@
 # Output from `optimization.py`
 
-**Executed:** 2026-06-02 02:19:06  
+**Executed:** 2026-06-02 02:53:08  
 **Script Path:** `C:\Users\Administrator\Desktop\code\momobot\WORKSPACE\output\thesis_02\optimization.py`  
 **Exit Code:** 0
 
@@ -80,7 +80,7 @@ n_gen  |  n_eval  | n_nds  |      eps      |   indicator
 
 NSGA‑II finished. Pareto front size: 100
 Pareto front saved to: C:\Users\Administrator\Desktop\code\momobot\WORKSPACE\output\thesis_02\plots\pareto\pareto_front.csv
-Pareto front plot saved to: C:\Users\Administrator\Desktop\code\momobot\WORKSPACE\output\thesis_02\plots\pareto\pareto_front_plot.png
+Pareto front plot saved to: C:\Users\Administrator\Desktop\code\momobot\WORKSPACE\output\thesis_02\plots\pareto\pareto_front_plot.png and C:\Users\Administrator\Desktop\code\momobot\WORKSPACE\output\thesis_02\plots\pareto\pareto_front_plot.svg
 
 Pareto front summary:
        beam_height  beam_length  ...       f2_max  deformation

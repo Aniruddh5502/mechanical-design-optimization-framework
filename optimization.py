@@ -194,58 +194,98 @@ def pareto_front_random(predictor: SurrogatePredictor, n_samples: int, objective
 # ============================================================================
 
 def plot_pareto_front(df: pd.DataFrame, objectives: List[tuple], output_path: Path):
-    """Create a scatter plot matrix of the Pareto front (2D or 3D, else diagonal hist)."""
+    """Create a publication‑quality scatter plot matrix of the Pareto front."""
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         print("matplotlib not available – skipping plot.")
         return
 
+    # ---------- Graph‑design standards ----------
+    plt.rcParams.update({
+        'font.family': 'serif',
+        'font.size': 10,
+        'axes.labelsize': 11,
+        'axes.titlesize': 12,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+    })
+
+    # Paul Tol colour palette (colorblind‑safe)
+    COLORS = {
+        'primary':   '#88CCEE',
+        'secondary': '#CC6677',
+        'tertiary':  '#DDCC77',
+        'quaternary':'#6699CC',
+        'quinary':   '#888888',
+        'accent':    '#EE7733',
+        'grid':      '#CCCCCC',
+    }
+
     obj_names = [name for name, _, _, _ in objectives]
     n_obj = len(obj_names)
 
+    # ----- Single objective: histogram -----
     if n_obj == 1:
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.hist(df[obj_names[0]], bins=20, color='#88CCEE', edgecolor='black')
-        ax.set_xlabel(obj_names[0])          # fixed: use objective name
-        ax.set_ylabel('Frequency')           # this is count, not the objective – correct
-        ax.set_title('Pareto front – single objective')
+        fig, ax = plt.subplots(figsize=(6.0, 6.0/1.3))  # width 6", height 4.6"
+        ax.hist(df[obj_names[0]], bins=20, color=COLORS['primary'], edgecolor='black')
+        ax.set_xlabel(obj_names[0])
+        ax.set_ylabel('Count')
+        ax.set_title('Pareto front – single objective', fontweight='bold')
+        # L‑frame & grid behind
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.grid(True, linestyle='-', alpha=0.3)
+        ax.grid(True, linestyle='-', alpha=0.5, zorder=1)
         plt.tight_layout()
-        plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+        plt.savefig(output_path, dpi=1000, bbox_inches='tight', facecolor='white')
+        # Also save SVG (optional, but standard)
+        svg_path = output_path.with_suffix('.svg')
+        plt.savefig(svg_path, dpi=1000, bbox_inches='tight', facecolor='white')
         plt.close()
-        print(f"Pareto front plot saved to: {output_path}")
+        print(f"Pareto front plot saved to: {output_path} and {svg_path}")
         return
 
-    # For 2 or more objectives, create a pairwise scatter matrix
-    fig, axes = plt.subplots(n_obj, n_obj, figsize=(4*n_obj, 4*n_obj))
-    # If only one row/column, axes is not 2D; handle that
+    # ----- Two or more objectives: scatter plot matrix -----
+    fig, axes = plt.subplots(n_obj, n_obj,
+                             figsize=(4.0 * n_obj, 4.0 * n_obj))
     if n_obj == 2:
-        axes = np.array([[axes[0,0], axes[0,1]],[axes[1,0], axes[1,1]]])
+        axes = np.array([[axes[0,0], axes[0,1]],
+                         [axes[1,0], axes[1,1]]])
+
     for i in range(n_obj):
         for j in range(n_obj):
             ax = axes[i, j]
             if i == j:
-                ax.hist(df[obj_names[i]], bins=20, color='#88CCEE', edgecolor='black')
+                # Diagonal: histogram
+                ax.hist(df[obj_names[i]], bins=20,
+                        color=COLORS['primary'], edgecolor='black')
                 ax.set_xlabel(obj_names[i])
-                ax.set_ylabel('Count')       # histogram y-label is count, not objective name
+                ax.set_ylabel('Count')
             else:
+                # Off‑diagonal: scatter
                 ax.scatter(df[obj_names[j]], df[obj_names[i]],
-                           s=10, alpha=0.7, edgecolors='white', linewidth=0.5,
-                           color='#CC6677')
+                           s=10,                # marker size
+                           alpha=0.7,
+                           edgecolors='white',  # white edge (skill requirement)
+                           linewidths=1.5,
+                           color=COLORS['secondary'])
                 ax.set_xlabel(obj_names[j])
                 ax.set_ylabel(obj_names[i])
+
+            # L‑frame & grid behind data (applies to all subplots)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
-            ax.grid(True, linestyle='-', alpha=0.3)
-    plt.suptitle("Pareto front – pairwise objective space", fontweight='bold')
+            ax.grid(True, linestyle='-', alpha=0.5, zorder=1)
+
+    plt.suptitle("Pareto front – pairwise objective space", fontweight='bold', y=1.02)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+    # Save high‑res PNG and SVG
+    plt.savefig(output_path, dpi=1000, bbox_inches='tight', facecolor='white')
+    svg_path = output_path.with_suffix('.svg')
+    plt.savefig(svg_path, dpi=72, bbox_inches='tight', facecolor='white')
     plt.close()
-    print(f"Pareto front plot saved to: {output_path}")
-    
+    print(f"Pareto front plot saved to: {output_path} and {svg_path}")
+
 
 # ============================================================================
 # Main
