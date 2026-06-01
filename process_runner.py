@@ -3,7 +3,7 @@ import sys
 import argparse
 from pathlib import Path
 from datetime import datetime
-import io
+import os
 
 def run_and_capture(script_path, output_md=None):
     """
@@ -36,18 +36,21 @@ def run_and_capture(script_path, output_md=None):
     
     # Buffer to capture all output
     output_buffer = []
-    
+    # Prepare environment for child process
+    env = os.environ.copy()
+    env['PYTHONIOENCODING'] = 'utf-8:replace'
     try:
         # Run the script with real-time output capture
         process = subprocess.Popen(
             [sys.executable, str(script_path)],
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # Merge stderr into stdout
+            stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,  # Line buffered
+            bufsize=1,
             cwd=script_path.parent,
             encoding='utf-8',
-            errors='replace'  # Replace encoding errors instead of crashing
+            errors='replace',
+            env=env                        # <-- pass the modified environment
         )
         
         # Read output line by line in real-time
