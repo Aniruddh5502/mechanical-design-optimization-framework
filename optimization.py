@@ -41,9 +41,9 @@ INPUT_BOUNDS = {
 # output_index: 0..5 as per predictor.target_names
 # transform: function applied to raw output (e.g., lambda x: -x for maximization inside NSGA‑II)
 OBJECTIVES = [
-    ('f1_max',          'max', 0, None),   # maximise modal frequency 1
-    ('deformation_min', 'min', 4, None),   # minimise max deformation (index 4)
-    ('stress_min',      'min', 5, None),   # minimise max stress (index 5)
+    ('f1_min',          'min', 0, None),   # maximise modal frequency 1
+    ('f2_max',          'max', 1, None),   # minimise max deformation (index 4)
+    ("deformation",     'max', 4, None)
 ]
 
 # NSGA‑II parameters
@@ -194,7 +194,7 @@ def pareto_front_random(predictor: SurrogatePredictor, n_samples: int, objective
 # ============================================================================
 
 def plot_pareto_front(df: pd.DataFrame, objectives: List[tuple], output_path: Path):
-    """Create a scatter plot matrix of the Pareto front."""
+    """Create a scatter plot matrix of the Pareto front (2D or 3D, else diagonal hist)."""
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -203,29 +203,40 @@ def plot_pareto_front(df: pd.DataFrame, objectives: List[tuple], output_path: Pa
 
     obj_names = [name for name, _, _, _ in objectives]
     n_obj = len(obj_names)
-    if n_obj < 2:
-        print("Only one objective – cannot create pairwise plot.")
+
+    if n_obj == 1:
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.hist(df[obj_names[0]], bins=20, color='#88CCEE', edgecolor='black')
+        ax.set_xlabel(obj_names[0])          # fixed: use objective name
+        ax.set_ylabel('Frequency')           # this is count, not the objective – correct
+        ax.set_title('Pareto front – single objective')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid(True, linestyle='-', alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+        plt.close()
+        print(f"Pareto front plot saved to: {output_path}")
         return
 
-    # Create subplots
+    # For 2 or more objectives, create a pairwise scatter matrix
     fig, axes = plt.subplots(n_obj, n_obj, figsize=(4*n_obj, 4*n_obj))
+    # If only one row/column, axes is not 2D; handle that
     if n_obj == 2:
         axes = np.array([[axes[0,0], axes[0,1]],[axes[1,0], axes[1,1]]])
     for i in range(n_obj):
         for j in range(n_obj):
             ax = axes[i, j]
             if i == j:
-                # Histogram on diagonal
                 ax.hist(df[obj_names[i]], bins=20, color='#88CCEE', edgecolor='black')
                 ax.set_xlabel(obj_names[i])
-                ax.set_ylabel('Frequency')
+                ax.set_ylabel('Count')       # histogram y-label is count, not objective name
             else:
-                # Scatter off‑diagonal
-                ax.scatter(df[obj_names[j]], df[obj_names[i]], s=10, alpha=0.7,
-                           edgecolors='white', linewidth=0.5, color='#CC6677')
+                ax.scatter(df[obj_names[j]], df[obj_names[i]],
+                           s=10, alpha=0.7, edgecolors='white', linewidth=0.5,
+                           color='#CC6677')
                 ax.set_xlabel(obj_names[j])
                 ax.set_ylabel(obj_names[i])
-            # L‑frame styling
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             ax.grid(True, linestyle='-', alpha=0.3)
@@ -234,6 +245,7 @@ def plot_pareto_front(df: pd.DataFrame, objectives: List[tuple], output_path: Pa
     plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
     print(f"Pareto front plot saved to: {output_path}")
+    
 
 # ============================================================================
 # Main
@@ -294,12 +306,14 @@ def main():
         df_pareto = pareto_front_random(predictor, RANDOM_SAMPLES, OBJECTIVES)
 
     # Save CSV
-    csv_path = OUTPUT_DIR / "pareto_front.csv"
+    pareto_path = OUTPUT_DIR / "pareto"
+    pareto_path.mkdir(parents=True, exist_ok=True)
+    csv_path  = pareto_path / "pareto_front.csv"
     df_pareto.to_csv(csv_path, index=False)
     print(f"Pareto front saved to: {csv_path}")
 
     # Plot
-    plot_pareto_front(df_pareto, OBJECTIVES, OUTPUT_DIR / "pareto_front_plot.png")
+    plot_pareto_front(df_pareto, OBJECTIVES, pareto_path / "pareto_front_plot.png")
 
     # Print some statistics
     print("\nPareto front summary:")
