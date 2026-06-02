@@ -29,10 +29,10 @@ from predict import SurrogatePredictor
 
 # Input bounds (same as training range – ensure they match your dataset)
 INPUT_BOUNDS = {
-    'beam_height': (5.0, 20.0),     # mm
-    'beam_length': (10.0, 17.0),    # mm
-    'fillet_size': (0.1, 0.6),      # mm
-    'beam_width': (0.4, 0.8),       # mm
+    'beam_height': (7.0, 18.0),     # mm
+    'beam_length': (10.5, 16.0),    # mm
+    'fillet_size': (0.2, 0.4),      # mm
+    'beam_width': (0.5, 0.6),       # mm
 }
 
 # Objective definitions:
@@ -42,7 +42,7 @@ INPUT_BOUNDS = {
 # transform: function applied to raw output (e.g., lambda x: -x for maximization inside NSGA‑II)
 OBJECTIVES = [
     ('f1_min',          'min', 0, None),   # maximise modal frequency 1
-    ('f2_max',          'max', 1, None)   # minimise max deformation (index 4)
+    ('f2_max',          'max', 1, None),   # minimise max deformation (index 4)
 ]
 # ("deformation",     'max', 4, None)
 # NSGA‑II parameters
