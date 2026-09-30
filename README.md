@@ -32,8 +32,10 @@ The surrogate model focuses on a flexure beam geometry intended for a MEMS accel
 - `dataset_gen.py`: Generates the input parameter grid based on design bounds.
 - `sweep.py`: Automates the execution of Ansys Workbench to populate the dataset.
 - `ansys_runner.py`: Handles the communication and parameter updates within Ansys Workbench.
+- `optimization.py`: Performs design optimization using the surrogate model.
 - `clean_logs.py`: Maintenance script to clear temporary log files.
 - `process_runner.py`: Utility to execute scripts and save their terminal output to markdown files.
+- `main.py`: Main entry point for the framework.
 
 ### Analysis and Visualization
 - `manifold-extraction.py`: Uses UMAP/PCA to visualize the output manifold and weight space.
